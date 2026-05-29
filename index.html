@@ -24,7 +24,8 @@
 </head>
 <body>
 <div class="container">
-  <div style="font-size: 40px; margin-bottom: 10px;">🏫</div>
+  <img src="https://i.ibb.co.com/yFbhLfRF/Logo-Yaspi.png" alt="Logo YASPI" style="width: 100px; height: auto; margin-bottom: 15px;">
+  
   <h2>📷 Scanner Absensi Guru YASPI</h2>
 
   <div id="setup-form">
@@ -68,7 +69,7 @@
 </div>
 
 <script>
-// ⚠️ TEMPELKAN URL WEB APP GOOGLE APPS-SCRIPT KAMU DI SINI!
+// URL WEB APP GOOGLE APPS-SCRIPT AKTIF
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOhTx42ERoJc0lndVpJf71ctqJYcdcNWPfFnaD3VMCqHnVq6suB-y-WnyaREEiEsY1/exec"; 
 
 window.onload = function() { 
@@ -118,7 +119,6 @@ function resetBiodata() {
 let html5QrcodeScanner;
 
 function startScanner() {
-  // Menggunakan interface pembaca bawaan yang lebih stabil menangani permission kamera
   html5QrcodeScanner = new Html5QrcodeScanner(
     "reader", 
     { 
@@ -134,14 +134,11 @@ function startScanner() {
 }
 
 function onScanError(errorMessage) {
-  // Hanya log ke konsol agar tidak mengganggu layar guru jika cuma eror fokus nyari QR
   console.log("Mencari QR Code...");
 }
 
 function onScanSuccess(decodedText) {
-  // Matikan scanner sementara agar tidak menduplikasi scan hantaman ganda
   html5QrcodeScanner.clear();
-  
   document.getElementById("loading").style.display = "block";
   
   let action = document.querySelector('input[name="absen_action"]:checked').value;
@@ -149,7 +146,6 @@ function onScanSuccess(decodedText) {
   let unit = localStorage.getItem("yaspi_unit");
   let email = localStorage.getItem("yaspi_email");
 
-  // Jalankan pelacakan GPS HP Guru
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
       let lat = pos.coords.latitude;
@@ -165,10 +161,7 @@ function onScanSuccess(decodedText) {
 }
 
 function kirimKeGoogleSheet(action, kelas, name, unit, email, lat, lng) {
-  // Merakit URL nembak langsung ke Google Web App Backend
   let finalUrl = `${WEB_APP_URL}?action=${action}&kelas=${encodeURIComponent(kelas)}&nama=${encodeURIComponent(name)}&unit=${encodeURIComponent(unit)}&email=${encodeURIComponent(email)}&lat=${lat}&lng=${lng}`;
-  
-  // Alihkan halaman ke hasil Google Apps Script
   window.open(finalUrl, "_top");
 }
 </script>
