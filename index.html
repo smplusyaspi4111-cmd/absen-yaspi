@@ -193,7 +193,13 @@ function onScanSuccess(decodedText) {
   const action = document.querySelector('input[name="absen_action"]:checked').value;
   
   // 2. Ambil teks asli isi QR Code kustommu
-  const kelas = decodedText.trim(); 
+  // 2. Ambil teks asli isi QR Code kustommu (Jalur Penjinak GitHub)
+let kelas = decodedText.trim(); 
+
+// Jika terdeteksi link qrco.de bawaan kertas lama, paksa ubah jadi teks murni kelas
+if (kelas.includes("bgpxc7")) {
+  kelas = "Kelas 7-1";
+} 
 
   // 3. Ambil biodata murni dari penyimpanan lokal HP
   const name = localStorage.getItem("yaspi_nama") || "Tanpa Nama";
