@@ -188,13 +188,18 @@ function startScanner() {
     alert("Gagal mengakses izin kamera: " + err);
   });
 }
-
-function onScanError(errorMessage) {
-  console.log("Mencari QR Code...");
-}
-
+let isProcessing = false;
 function onScanSuccess(decodedText) {
-  // Menghentikan pencarian agar tidak double scan saat proses kirim data
+  // JIKA GERBANG SEDANG DIKUNCI, JANGAN PROSES APA-APA LAGI!
+  if (isProcessing) {
+    console.log("Scan ganda dicegah!");
+    return;
+  }
+  
+  // KUNCI GERBANG SEKARANG JUGA
+  isProcessing = true;
+  
+  // Memunculkan loading text
   document.getElementById("loading").style.display = "block";
   
   let action = document.querySelector('input[name="absen_action"]:checked').value;
@@ -215,7 +220,6 @@ function onScanSuccess(decodedText) {
     kirimKeGoogleSheet(action, decodedText, name, unit, email, 0, 0);
   }
 }
-
 function kirimKeGoogleSheet(action, kelas, name, unit, email, lat, lng) {
   let finalUrl = `${WEB_APP_URL}?action=${action}&kelas=${encodeURIComponent(kelas)}&nama=${encodeURIComponent(name)}&unit=${encodeURIComponent(unit)}&email=${encodeURIComponent(email)}&lat=${lat}&lng=${lng}`;
   window.open(finalUrl, "_top");
