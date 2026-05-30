@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scanner Absensi Guru YASPI</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="https://i.ibb.co.com/S4nnjtZz/Logo-Absen-VM.png">
+  <link rel="manifest" href="manifest.json">
+  <link class="apple-touch-icon" href="https://i.ibb.co.com/S4nnjtZz/Logo-Absen-VM.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
     body { font-family: sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; text-align: center; }
@@ -92,7 +92,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 installBtn.addEventListener('click', async () => {
   if (deferredPrompt) {
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    await deferredPrompt.userChoice;
     deferredPrompt = null;
     installBtn.style.display = 'none';
   }
@@ -146,22 +146,17 @@ function resetBiodata() {
   }
 }
 
-// --- PERBAIKAN SISTEM PEMILIHAN KAMERA OTOMATIS ---
 function startScanner() {
-  // Mengecek semua kamera yang tersedia di perangkat
   Html5Qrcode.getCameras().then(devices => {
     if (devices && devices.length > 0) {
-      let cameraId = devices[0].id; // Default kamera pertama (biasanya webcam laptop)
+      let cameraId = devices[0].id; 
       
-      // Cari kamera belakang secara otomatis untuk pengguna HP
-      // Mencari kamera yang namanya mengandung kata 'back', 'rear', atau 'lingkungan'
       const backCamera = devices.find(device => 
         device.label.toLowerCase().includes('back') || 
         device.label.toLowerCase().includes('rear') ||
         device.label.toLowerCase().includes('environment')
       );
       
-      // Jika ditemukan kamera belakang (di HP), gunakan kamera tersebut
       if (backCamera) {
         cameraId = backCamera.id;
       }
@@ -176,7 +171,6 @@ function startScanner() {
         onScanSuccess,
         onScanError
       ).catch(err => {
-        // Fallback jika mode kamera belakang gagal mengunci permission, gunakan kamera default apa saja
         console.error("Gagal mengunci kamera khusus, mencoba kamera default:", err);
         const fallbackScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
         fallbackScanner.render(onScanSuccess, onScanError);
@@ -188,58 +182,51 @@ function startScanner() {
     alert("Gagal mengakses izin kamera: " + err);
   });
 }
+
 let isProcessing = false;
+
 function onScanSuccess(decodedText) {
-  if (isProcessing) return; // Anti-ganda agar tidak terscan dua kali
+  if (isProcessing) return; 
   isProcessing = true;
 
-  // 1. Ambil data dari tombol Masuk/Keluar yang dipilih guru
-  const action = document.querySelector('input[name="action"]:checked').value;
+  // 1. Ambil data status dari tombol radio yang dicentang
+  const action = document.querySelector('input[name="absen_action"]:checked').value;
   
-  // 2. Kunci Utama: Mengambil teks asli dari QR Code (Misal: "Kelas 7-1")
+  // 2. Ambil teks asli isi QR Code kustommu
   const kelas = decodedText.trim(); 
 
-  // 3. Ambil data Guru yang sedang login di aplikasi
-  const name = document.getElementById('display-name').innerText;
-  const unit = document.getElementById('display-unit').innerText;
-  const email = document.getElementById('display-email').innerText;
+  // 3. Ambil biodata murni dari penyimpanan lokal HP
+  const name = localStorage.getItem("yaspi_nama") || "Tanpa Nama";
+  const unit = localStorage.getItem("yaspi_unit") || "-";
+  const email = localStorage.getItem("yaspi_email") || "-";
 
-  // Tampilkan efek loading agar guru tahu data sedang diproses
-  document.getElementById('reader').innerHTML = "<p style='padding:20px; color:#1a3a5f;'><b>⏳ Sedang memproses absensi... Mohon tunggu...</b></p>";
+  // Efek Loading
+  document.getElementById('reader').style.display = "none";
+  document.getElementById('loading').style.display = "block";
 
-  // 4. Minta izin GPS dan Kirim Data ke Google Spreadsheet
+  // 4. Proses GPS Geolocation
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        
-        // Kirim ke Google Sheet
         kirimKeGoogleSheet(action, kelas, name, unit, email, lat, lng);
       },
       function(error) {
-        // Jika GPS mati/ditolak, tetap kirim data dengan koordinat 0
+        alert("GPS Gagal dimuat. Absensi tetap dikirim tanpa koordinat.");
         kirimKeGoogleSheet(action, kelas, name, unit, email, 0, 0);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 8000 }
     );
   } else {
-    // Jika HP tidak mendukung GPS, tetap kirim data dengan koordinat 0
     kirimKeGoogleSheet(action, kelas, name, unit, email, 0, 0);
   }
 }
-    }, function(err) {
-      alert("GPS dimatikan/gagal. Absen diteruskan tanpa koordinat lokasi.");
-      kirimKeGoogleSheet(action, decodedText, name, unit, email, 0, 0);
-    }, { enableHighAccuracy: true, timeout: 5000 });
-  } else {
-    kirimKeGoogleSheet(action, decodedText, name, unit, email, 0, 0);
-  }
-}
-  function onScanError(errorMessage) {
-  // Biarkan kosong, ini gunanya untuk meredam log pencarian kamera agar tidak memicu eror pop-up
+
+function onScanError(errorMessage) {
   console.log("Mencari QR Code...");
 }
+
 function kirimKeGoogleSheet(action, kelas, name, unit, email, lat, lng) {
   let finalUrl = `${WEB_APP_URL}?action=${action}&kelas=${encodeURIComponent(kelas)}&nama=${encodeURIComponent(name)}&unit=${encodeURIComponent(unit)}&email=${encodeURIComponent(email)}&lat=${lat}&lng=${lng}`;
   window.open(finalUrl, "_top");
