@@ -15,7 +15,6 @@
     .btn { width: 100%; padding: 14px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     .btn:hover { background-color: #0056b3; }
     
-    /* Tombol Pasang Aplikasi Khusus */
     .btn-install { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; margin-bottom: 20px; display: none; }
     .btn-install:hover { background-color: #218838; }
 
@@ -77,18 +76,14 @@
 </div>
 
 <script>
-// URL WEB APP GOOGLE APPS-SCRIPT AKTIF
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOhTx42ERoJc0lndVpJf71ctqJYcdcNWPfFnaD3VMCqHnVq6suB-y-WnyaREEiEsY1/exec"; 
 
-// --- FITUR TOMBOL PASANG DI LAYAR UTAMA (PWA SHORTCUT) ---
 let deferredPrompt;
 const installBtn = document.getElementById('install-button');
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Mencegah Chrome memunculkan pop-up bawaan yang terlalu cepat
   e.preventDefault();
   deferredPrompt = e;
-  // Memunculkan tombol hijau buatan kita
   installBtn.style.display = 'block';
 });
 
@@ -96,9 +91,6 @@ installBtn.addEventListener('click', async () => {
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('Guru menyetujui instalasi aplikasi');
-    }
     deferredPrompt = null;
     installBtn.style.display = 'none';
   }
@@ -108,7 +100,6 @@ window.addEventListener('appinstalled', () => {
   installBtn.style.display = 'none';
   alert("Aplikasi Absen YASPI berhasil terpasang di layar HP Anda!");
 });
-// --------------------------------------------------------
 
 window.onload = function() { 
   checkSavedData(); 
@@ -153,21 +144,47 @@ function resetBiodata() {
   }
 }
 
-let html5QrcodeScanner;
-
+// --- PERBAIKAN SISTEM PEMILIHAN KAMERA OTOMATIS ---
 function startScanner() {
-  html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader", 
-    { 
-      fps: 10, 
-      qrbox: { width: 250, height: 250 },
-      rememberLastUsedCamera: true,
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-    },
-    /* verbose= */ false
-  );
-  
-  html5QrcodeScanner.render(onScanSuccess, onScanError);
+  // Mengecek semua kamera yang tersedia di perangkat
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length > 0) {
+      let cameraId = devices[0].id; // Default kamera pertama (biasanya webcam laptop)
+      
+      // Cari kamera belakang secara otomatis untuk pengguna HP
+      // Mencari kamera yang namanya mengandung kata 'back', 'rear', atau 'lingkungan'
+      const backCamera = devices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment')
+      );
+      
+      // Jika ditemukan kamera belakang (di HP), gunakan kamera tersebut
+      if (backCamera) {
+        cameraId = backCamera.id;
+      }
+
+      const html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        cameraId, 
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanError
+      ).catch(err => {
+        // Fallback jika mode kamera belakang gagal mengunci permission, gunakan kamera default apa saja
+        console.error("Gagal mengunci kamera khusus, mencoba kamera default:", err);
+        const fallbackScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        fallbackScanner.render(onScanSuccess, onScanError);
+      });
+    } else {
+      alert("Kamera tidak ditemukan di perangkat ini.");
+    }
+  }).catch(err => {
+    alert("Gagal mengakses izin kamera: " + err);
+  });
 }
 
 function onScanError(errorMessage) {
@@ -175,7 +192,7 @@ function onScanError(errorMessage) {
 }
 
 function onScanSuccess(decodedText) {
-  html5QrcodeScanner.clear();
+  // Menghentikan pencarian agar tidak double scan saat proses kirim data
   document.getElementById("loading").style.display = "block";
   
   let action = document.querySelector('input[name="absen_action"]:checked').value;
