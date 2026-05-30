@@ -220,6 +220,10 @@ function onScanSuccess(decodedText) {
     kirimKeGoogleSheet(action, decodedText, name, unit, email, 0, 0);
   }
 }
+  function onScanError(errorMessage) {
+  // Biarkan kosong, ini gunanya untuk meredam log pencarian kamera agar tidak memicu eror pop-up
+  console.log("Mencari QR Code...");
+}
 function kirimKeGoogleSheet(action, kelas, name, unit, email, lat, lng) {
   let finalUrl = `${WEB_APP_URL}?action=${action}&kelas=${encodeURIComponent(kelas)}&nama=${encodeURIComponent(name)}&unit=${encodeURIComponent(unit)}&email=${encodeURIComponent(email)}&lat=${lat}&lng=${lng}`;
   window.open(finalUrl, "_top");
