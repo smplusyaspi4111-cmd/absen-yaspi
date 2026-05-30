@@ -1,0 +1,16 @@
+{
+  "short_name": "Absen YASPI",
+  "name": "Scanner Absensi Guru YASPI",
+  "icons": [
+    {
+      "src": "https://i.ibb.co.com/S4nnjtZz/Logo-Absen-VM.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "index.html",
+  "display": "standalone",
+  "theme_color": "#007bff",
+  "background_color": "#ffffff"
+}
